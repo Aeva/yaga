@@ -1,0 +1,44 @@
+* goals
+This is an experiment for generating a valid GLSL shader program from
+a Scheme DSL.
+
+The eventual goal is to provide a Scheme DSL for generating
+minimalist opinionated rendering libraries.  The output would likely
+be a generated boilerplate C library w/ embedded shader sources.
+Native JS + webgl is also a consideration.
+
+This would ideally cover:
+
+ - compositing graph
+ - resource allocation
+ - shader permutations
+ - command queues
+ - supporting every dang rendering API under the sun
+
+
+But this project is a long ways away from that.
+
+* how to use this
+
+The file "run-this.scm" demonstrates what I have so far, and is to
+demonstrate what the DSL might look like.
+
+While I am not currently planning on targeting any specific Scheme
+implementation for this project, I have been developing it with Guile,
+so if you are interested in running the example, I recommend you use
+that.
+
+* license?
+
+At this moment, everything in this repository is public domain via the
+[[https://creativecommons.org/publicdomain/zero/1.0/][CC0 Public Domain Dedication]].
+
+Once I am satisfied with the direction of this project, the license
+will likely be changed to GPL (or LGPL if there is a redistributable
+component such as a command queue implementation + rendering
+backends).
+
+As the actual rendering library would be generated from a user's code,
+this should not impose any license restrictions on, say, any games
+that might use this.  This future license choice would be intended to
+encourage changes to the compiler itself to be shared.
