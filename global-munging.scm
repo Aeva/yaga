@@ -23,10 +23,9 @@
 
 ;; Guile doesn't define this.  Weird.
 (define (keyword->string keyword)
-  (symbol->string (keyword->symbol keyword)))
-
-
-
+  (if (keyword? keyword)
+      (symbol->string (keyword->symbol keyword))
+      ""))
 
 ;; Parses out the global variables from an AST.
 (define (find-variables stream)

@@ -1,6 +1,7 @@
 
 (include "shader-structs.scm")
 (include "global-munging.scm")
+(include "taxonomy.scm")
 
 
 ;; Contrived example for defining a vertex shader or something:

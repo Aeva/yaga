@@ -28,6 +28,16 @@
   (let ([record (find-record record-name)])
     (if record (find-in-record record variable-name) #f)))
 
+;; Returns the value of the find-variable call for a given record, if
+;; the input s-expression describes a record.
+(define (lookup-by-path thing)
+  (if (and (list? thing) (not (eq? '() thing)))
+      (let* ([record-name (car thing)]
+             [record (find-record record-name)]
+             [variable-name (if record (car (cdr thing)) #f)])
+        (if (and record variable-name) (find-in-record record variable-name) #f))
+      #f))
+
 ;; Update or add a named variable definition to a named record.
 (define (update-record! record-name variable-name data)
   (let ([record (find-record record-name)]
