@@ -1,6 +1,11 @@
 
 (include "primitives.scm")
 
+;; Similar to (assoc key alist), but only returns the matching value.
+(define (fetch key alist)
+  (let ([found (assoc key alist)])
+    (if found (cdr found) #f)))
+
 
 ;; This function is for processing the "define-type" special form, and
 ;; inserting the resulting struct definition into the current
@@ -60,16 +65,14 @@
 ;; This function is for processing the "define-vertex-shader" and
 ;; "define-fragment-shader" special forms, and inserting the resulting
 ;; definition into the current environment.
-(define (action-shader shader-type params env)
+(define (action-shader-stage params env)
   
   ;; Returns true if the line is a valid input expression.  May raise
   ;; an error the input expression is malformed.
   (define (validate-input line)
-    (if (and (not (eq? shader-type 'fragment)) (eq? (car line) 'interpolate))
-        (error "'interpolate' special form can only be used with fragment shaders"))
     (let ([is-input (or (eq? (car line) 'input) (eq? (car line) 'interpolate))])
       (if (and is-input (not (eq? (length line) 3)))
-          (error "expected (input binding-name type-name)"))
+          (error "expected (input|interpolate binding-name type-name)"))
       is-input))
 
   ;; Build an associative list representing the shader.
@@ -88,7 +91,6 @@
                   (collect (cdr body) (cons binding inputs) transports))]
              [else
               (list
-               (cons 'type shader-type)
                (cons 'body body)
                (cons 'inputs inputs)
                (cons 'transports transports))]))))
@@ -104,91 +106,110 @@
     (make-environment types shaders programs)))
 
 
-;; 
-(define (action-program params env)
-
-  ;;
-  (define (make-program shaders)
-    (define (filter shaders vertex fragment)
-      (cond
-       [(and (null? shaders) (or (null? vertex) (null? fragment)))
-        (error "incomplete shader program")]
-       [(null? shaders)
-        (list
-         (cons 'vertex vertex)
-         (cons 'fragment fragment))]
-       [else
-        (let* ([name (car shaders)]
-               [shader (assoc name (environment-shaders env))]
-               [type (if shader (cdr (assoc 'type (cdr shader))) '())])
-          (cond
-           [(not shader) (error "missing definition for named shader")]
-           [(eq? type 'vertex)
-            (if (null? vertex)
-                (filter (cdr shaders) name fragment)
-                (error "multiple vertex shaders defined in program"))]
-           [(eq? type 'fragment)
-            (if (null? fragment)
-                (filter (cdr shaders) vertex name)
-                (error "multiple fragment shaders defined in program"))]
-           [else (error "unknown shader type")]))]))
-    (filter shaders '() '()))
-
-  ;;
-  (define (validate-inputs shader validated)
-    (define (accumulate validated inputs)
-      (cond
-       [(null? inputs) validated]
-       [else
-        (let* ([check (car inputs)]
-               [name (car check)]
-               [value (cdr check)]
-               [found (assoc name validated)]
-               [found-name (if found (car found) '())]
-               [found-value (if found (cdr found) '())]
-               [collision (and found
-                               (not (and (eq? name found-name)
-                                         (equal? value found-value))))])
-          (if collision (error "conflicting definiton for shader inputs"))
-          (accumulate (cons check validated) (cdr inputs)))]))
-    (accumulate validated (cdr (assoc 'inputs (cdr shader)))))
-
-  ;;
-  (define (validate-transports shader validated)
-    (define (validate validated transports)
-      (cond
-       [(null? transports) validated]
-       [else
-        (let* ([check (car transports)]
-               [name (car check)]
-               [value (cdr check)]
-               [found (assoc name validated)]
-               [found-name (if found (car found) '())]
-               [found-value (if found (cdr found) '())]
-               [valid (and found (eq? name found-name) (equal? value found-value))])
-          (cond
-           [(not found)
-            (error "named interpolated type missing in vertex shader inputs")]
-           [(not valid)
-            (error "named interpolated type does not match vertex shader input")]
-           [else (validate validated (cdr transports))]))]))
-    (validate validated (cdr (assoc 'transports (cdr shader)))))
+;; Validate a given shader program.
+(define (validate-program program)
   
-  ;;
-  (define (validate-program program)
-    (let* ([vertex-name (cdr (assoc 'vertex program))]
-           [fragment-name (cdr (assoc 'fragment program))]
-           [shaders (environment-shaders env)]
-           [vertex-shader (cdr (assoc vertex-name shaders))]
-           [fragment-shader (cdr (assoc fragment-name shaders))])
-      (validate-transports
-       fragment-shader
-       (validate-inputs fragment-shader (validate-inputs vertex-shader '())))))
+  ;; Compare two bindings by name.
+  (define (same-binding? lhs rhs)
+    (eq? (car lhs) (car rhs)))
 
-  
+  ;; Compare two bindings by name and type.
+  (define (equal-input? lhs rhs)
+    (and (same-binding? lhs rhs)
+         (equal? (cdr lhs) (cdr rhs))))
+
+  (define (input-collision? lhs rhs)
+    (and (same-binding? lhs rhs)
+         (not (equal-input? lhs rhs))))
+    
+  ;; Validate a list of inputs to verify that there are no
+  ;; contradicting inputs.  Duplicates are fine.
+  (define (validate-inputs inputs)
+    (cond
+     [(null? inputs) '()]
+     [else
+      (let* ([input (car inputs)]
+             [contradiciton?
+              (lambda (other-input) (input-collision? input other-input))]
+             [collision (find contradiciton? (cdr inputs))])
+        (if collision
+            (error "shader program links shaders with contradicting inputs"))
+        (validate-inputs (cdr inputs)))]))
+ 
+  ;; Verify a list of inputs and transports such that the transports
+  ;; match to corresponding inputs.  Duplicates are fine.
+  (define (validate-transports inputs transports)
+    (cond
+     [(null? transports) '()]
+     [else
+      (let* ([transport (car transports)]
+             [matching-input?
+              (lambda (input) (equal-input? transport input))]
+             [found (find matching-input? (cdr inputs))])
+        (if (not found)
+            (error "shader program transport lacks corresponding input"))
+        (validate-transports inputs (cdr transports)))]))
+
+  (let ([types (fetch 'types program)]
+        [inputs (fetch 'inputs program)]
+        [transports (fetch 'transports program)]
+        [shaders (fetch 'shaders program)])
+    (validate-inputs inputs)
+    (validate-transports inputs transports)))
+
+
+;;
+(define (action-shader-program params env)
+
+  ;; Create an object representing the shader program, and perform
+  ;; validation on the resulting combination.
+  (define (make-program stages)
+    
+    ;; Takes a description of a shader stage, validates that the
+    ;; shader type is correct, and then returns the matching shader
+    ;; definition.
+    (define (validate-shader-stage stage)
+      (let* ([type (car stage)]
+             [lookup (cadr stage)]
+             [shader (fetch lookup (environment-shaders env))])
+        (if (not shader)
+            (error "cannot find named shader"))
+        (if (not (member type '(#:vertex #:fragment)))
+            (error "unknown shader type"))
+        (cons type shader)))
+
+    ;; Validates shader stages, collects the combined inputs and
+    ;; transports for later validation.  Returns an a-list of the
+    ;; accumulated information.
+    (define (accumulate-inputs stages types inputs transports)
+      (cond
+       [(null? stages)
+        (list (cons 'types types)
+              (cons 'inputs inputs)
+              (cons 'transports transports))]
+       [(pair? (car stages))
+        (let* ([validation (validate-shader-stage (car stages))]
+               [shader (cdr validation)]
+               [shader-type (car validation)]
+               [shader-inputs (fetch 'inputs (cdr shader))]
+               [shader-transports (fetch 'transports (cdr shader))]
+               [new-types (cons shader-type types)]
+               [new-inputs (append shader-inputs inputs)]
+               [new-transports (append shader-transports transports)])
+          (if (member shader-type types)
+              (error "Shader program may only have one shader of each type."))
+          (if (not (or (eq? shader-type #:fragment)
+                       (null? shader-transports)))
+              (error "Only fragment shaders may define 'interpolate' inputs!"))
+          (accumulate-inputs (cdr stages) new-types new-inputs new-transports))]
+       [else (error "malformed program definition - expected association list")]))
+
+    ;; Build the program object and perform validation.
+    (cons (list 'shaders stages) (accumulate-inputs stages '() '() '())))
+
   (let* ([name (car params)]
-         [refs (car (cdr params))]
-         [program (cons name (make-program refs))]
+         [stages (cdr params)]
+         [program (cons name (make-program stages))]
          [types (environment-types env)]
          [shaders (environment-shaders env)]
          [programs (cons program (environment-programs env))])
@@ -196,12 +217,13 @@
     (make-environment types shaders programs)))
 
 
+;;
 (define (print-struct struct)
   (let* ([name (car struct)]
          [fields (cdr struct)]
-         [buffers (cdr (assoc 'buffers fields))]
-         [controls (cdr (assoc 'controls fields))]
-         [functions (cdr (assoc 'functions fields))])
+         [buffers (fetch 'buffers fields)]
+         [controls (fetch 'controls fields)]
+         [functions (fetch 'functions fields)])
     (newline)
     (display "Definition of ")
     (display name)

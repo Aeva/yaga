@@ -18,9 +18,8 @@
         [params (cdr expr)])
     (cond
      [(eq? action 'define-type) (action-struct params env)]
-     [(eq? action 'define-vertex-shader) (action-shader 'vertex params env)]
-     [(eq? action 'define-fragment-shader) (action-shader 'fragment params env)]
-     [(eq? action 'define-program) (action-program params env)]
+     [(eq? action 'define-shader-stage) (action-shader-stage params env)]
+     [(eq? action 'define-shader-program) (action-shader-program params env)]
      [else (error "unknown action")])))
 
 
