@@ -13,33 +13,6 @@
   (step-reader!))
 
 
-;; placeholder
-(define (action-shader shader-type params env)
-  (let ([name (car params)]
-        [body (cdr params)])
-    (display " - defining shader: ")
-    (display name)
-    (display (newline)))
-    env)
-
-
-;; placeholder
-(define (action-program params env)
-  (let ([name (car params)]
-        [shaders (cdr params)])
-
-    (display " - defining program: ")
-    (display name)
-    (display (newline))
-    (display "   - using: ")
-    (display (car (car shaders)))
-    (display (newline))
-    (display "   - using: ")
-    (display (cadr (car shaders)))
-    (display (newline)))
-  env)
-
-
 (define (dispatch-action expr env)
   (let ([action (car expr)]
         [params (cdr expr)])
