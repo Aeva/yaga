@@ -20,13 +20,13 @@ But this project is a long ways away from that.
 
 * how to use this
 
-The file "run-this.scm" demonstrates what I have so far, and is to
-demonstrate what the DSL might look like.
+The run-debug.sh shell script can be used to print some debug output,
+and might eventually pop out a valid shader.
 
 While I am not currently planning on targeting any specific Scheme
 implementation for this project, I have been developing it with Guile,
 so if you are interested in running the example, I recommend you use
-that.
+that.  It might already be using Guile-specific things on accident.
 
 * license?
 

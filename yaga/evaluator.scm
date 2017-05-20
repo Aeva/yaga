@@ -1,6 +1,8 @@
 
-(include "environment.scm")
-(include "shader-struct.scm")
+(define-module (yaga evaluator)
+  #:use-module (yaga environment)
+  #:use-module (yaga shader-struct)
+  #:export (parse inspect))
 
 
 (define (parse shader-src)
@@ -29,9 +31,3 @@
      [(null? page) env]
      [else (ingest (cdr page) (dispatch-action (car page) env))]))
   (ingest (parse shader-src) (make-environment '() '() '())))
-
-
-(define test (inspect "shader.scm"))
-(newline)
-(newline)
-(map print-struct (environment-types test))

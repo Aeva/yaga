@@ -1,10 +1,13 @@
 
-(include "primitives.scm")
-
-;; Similar to (assoc key alist), but only returns the matching value.
-(define (fetch key alist)
-  (let ([found (assoc key alist)])
-    (if found (cdr found) #f)))
+(define-module (yaga shader-struct)
+  #:use-module (yaga environment)
+  #:use-module (yaga primitives)
+  #:use-module (yaga common)
+  #:use-module (srfi srfi-1) ;; provides 'find'
+  #:export (action-struct)
+  #:export (action-shader-stage)
+  #:export (action-shader-program)
+  #:export (print-struct))
 
 
 ;; This function is for processing the "define-type" special form, and

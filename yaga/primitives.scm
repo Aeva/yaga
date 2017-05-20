@@ -1,5 +1,10 @@
 
-(use-modules (srfi srfi-1)) ;; provides 'find'
+(define-module (yaga primitives)
+  #:use-module (yaga common)
+  #:use-module (srfi srfi-1) ;; provides 'find'
+  #:export (buffer-keyword?
+            primitive?
+            vector-size))
 
 
 (define (buffer-keyword? keyword)
@@ -15,13 +20,6 @@
                 #:matrix2 #:matrix3 #:matrix4)])
     (and (keyword? keyword)
          (find (lambda (check) (equal? keyword check)) types))))
-
-
-;; Guile doesn't define this.  Weird.
-(define (keyword->string keyword)
-  (if (keyword? keyword)
-      (symbol->string (keyword->symbol keyword))
-      ""))
 
 
 (define (vector-size variable)
