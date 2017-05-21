@@ -4,7 +4,8 @@
   #:use-module (yaga environment)
   #:use-module (yaga primitives)
   #:use-module (yaga common)
-  #:export (action-shader-program))
+  #:use-module (srfi srfi-1) ;; find
+  #:export (action-shader-program gather-program-vars))
 
 
 ;;
@@ -51,3 +52,44 @@
          [programs (cons program (environment-programs env))])
     (validate-program (cdr program))
     (make-environment types shaders programs)))
+
+
+;;
+(define (gather-program-vars program env)
+
+  ;;
+  (define (get-binding name frameset)
+    (cond
+     [(null? frameset) #f]
+     [else     
+      (let* ([frame (car frameset)]
+             [found (assoc name frame)])
+        (or found (get-binding name (cdr frameset))))]))
+
+  ;;
+  (define (is-lookup? expr frameset)
+    (cond [(null? expr) #f]
+          [(pair? expr) (get-binding (car expr) frameset)]
+          [else #f]))
+
+  ;;
+  (define (traverse expr frameset)
+    (cond
+     [(or (null? expr)(not (pair? expr))) '()]
+     [(pair? expr)
+      (let ([found (is-lookup? expr frameset)])
+        (cond
+         [found (list (cons (cadr found) (cdr expr)))]
+         [else
+          (let ([recurse (lambda (nexpr) (traverse nexpr frameset))])
+            (apply append (map recurse expr)))]))]))
+  
+  (newline)(newline)
+  (let* ([shader-names (map cadr (car (fetch 'shaders program)))]
+         [shaders (map (lambda (name) (lookup-shader name env)) shader-names)]
+         [inputs (fetch 'inputs program)]
+         [transports (fetch 'transports program)]
+         [all-vars (append inputs transports)]
+         [frameset (cons all-vars '())]
+         [inspect (lambda (shader) (traverse (fetch 'body (cdr shader)) frameset))])
+    (delete-duplicates (apply append (map inspect shaders)))))
