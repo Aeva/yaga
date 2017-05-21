@@ -58,30 +58,22 @@
 (define (gather-program-vars program env)
 
   ;;
-  (define (get-binding name frameset)
-    (cond
-     [(null? frameset) #f]
-     [else     
-      (let* ([frame (car frameset)]
-             [found (assoc name frame)])
-        (or found (get-binding name (cdr frameset))))]))
-
-  ;;
-  (define (is-lookup? expr frameset)
+  (define (is-lookup? expr bindings)
     (cond [(null? expr) #f]
-          [(pair? expr) (get-binding (car expr) frameset)]
+          [(null? bindings) #f]
+          [(pair? expr) (assoc (car expr) bindings)]
           [else #f]))
 
   ;;
-  (define (traverse expr frameset)
+  (define (traverse expr bindings)
     (cond
      [(or (null? expr)(not (pair? expr))) '()]
      [(pair? expr)
-      (let ([found (is-lookup? expr frameset)])
+      (let ([found (is-lookup? expr bindings)])
         (cond
-         [found (list (cons (cadr found) (cdr expr)))]
+         [found (list (list (cadr found) (cadr expr)))]
          [else
-          (let ([recurse (lambda (nexpr) (traverse nexpr frameset))])
+          (let ([recurse (lambda (nexpr) (traverse nexpr bindings))])
             (apply append (map recurse expr)))]))]))
   
   (newline)(newline)
@@ -89,7 +81,6 @@
          [shaders (map (lambda (name) (lookup-shader name env)) shader-names)]
          [inputs (fetch 'inputs program)]
          [transports (fetch 'transports program)]
-         [all-vars (append inputs transports)]
-         [frameset (cons all-vars '())]
-         [inspect (lambda (shader) (traverse (fetch 'body (cdr shader)) frameset))])
+         [bindings (append inputs transports)]
+         [inspect (lambda (shader) (traverse (fetch 'body (cdr shader)) bindings))])
     (delete-duplicates (apply append (map inspect shaders)))))

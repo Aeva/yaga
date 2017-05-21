@@ -13,19 +13,19 @@
   (world-position (* (world-matrix) (vertex-position)))
   (screen-position
    (lambda (camera) 
-     (* (camera 'camera-matrix) (world-matrix) (vertex-position))))
+     (* (camera camera-matrix) (world-matrix) (vertex-position))))
   (texture-map #:pixmap))
 
 
 (define-shader-stage basic-vertex-shader
   (input model <model>)
   (input camera <camera>)
-  ((model 'screen-position) camera))
+  ((model screen-position) camera))
 
 
 (define-shader-stage basic-fragment-shader
   (interpolate model <model>)
-  (sample (model 'texture-map) (model 'vertex-uv)))
+  (sample (model texture-map) (model vertex-uv)))
 
 
 (define-shader-program basic-shader
