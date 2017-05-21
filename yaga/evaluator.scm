@@ -2,6 +2,8 @@
 (define-module (yaga evaluator)
   #:use-module (yaga environment)
   #:use-module (yaga shader-struct)
+  #:use-module (yaga shader-stage)
+  #:use-module (yaga shader-program)
   #:export (parse inspect))
 
 
