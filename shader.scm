@@ -11,16 +11,17 @@
   (vertex-uv #:float2 #:buffer)
   (world-matrix #:matrix4)
   (world-position (* (world-matrix) (vertex-position)))
-  (screen-position
-   (lambda (camera) 
-     (* (camera camera-matrix) (world-matrix) (vertex-position))))
+  ;; (screen-position
+  ;;  (lambda (camera) 
+  ;;    (* (camera camera-matrix) (world-matrix) (vertex-position))))
   (texture-map #:pixmap))
 
 
 (define-shader-stage basic-vertex-shader
   (input model <model>)
   (input camera <camera>)
-  ((model screen-position) camera))
+  ;;((model screen-position) camera))
+  (* (camera camera-matrix) (model world-matrix) (model vertex-position)))
 
 
 (define-shader-stage basic-fragment-shader
