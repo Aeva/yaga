@@ -3,8 +3,12 @@
   #:use-module (yaga environment)
   #:use-module (yaga primitives)
   #:use-module (yaga common)
+  #:use-module (srfi srfi-1) ;; find
   #:export (action-struct)
-  #:export (print-struct))
+  #:export (print-struct)
+  #:export (struct-type-lookup)
+  #:export (struct-function-lookup)
+  #:export (struct-all-bindings))
 
 
 ;; This function is for processing the "define-type" special form, and
@@ -60,6 +64,34 @@
          [shaders (environment-shaders env)]
          [programs (environment-programs env)])
     (make-environment types shaders programs)))
+
+
+;; For a given field name, return a type if the field name
+;; corresponds to a buffer or a control, or return false.
+(define (struct-type-lookup struct field-name)
+  (let* ([name (car struct)]
+         [fields (cdr struct)]
+         [buffers (fetch 'buffers fields)]
+         [controls (fetch 'controls fields)]
+         [found (or (fetch field-name buffers) (fetch field-name controls))])
+    (if found (find primitive? found) #f)))
+
+
+;; For a given field name, return an expression if the field name is a
+;; function, otherwise return false.
+(define (struct-function-lookup struct field-name)
+    (let* ([name (car struct)]
+         [fields (cdr struct)]
+         [functions (fetch 'functions fields)]
+         [found (fetch field-name functions)])
+      (if found (car found) #f)))
+
+
+;; Generates a 'bindings' a-list.
+(define (struct-all-bindings struct)
+  (let* ([name (car struct)]
+         [fields (cdr struct)])
+    (apply append (map cdr fields))))
 
 
 ;;

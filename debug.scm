@@ -11,4 +11,6 @@
 
 (define shader-program (cdr (car (environment-programs test))))
 (display (gather-program-vars shader-program test))
+(newline)(newline)
+(display (car (inlined-program shader-program test)))
 (newline)

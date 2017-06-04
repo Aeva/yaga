@@ -1,11 +1,12 @@
 
 (define-module (yaga shader-program)
   #:use-module (yaga shader-validator)
+  #:use-module (yaga shader-struct)
   #:use-module (yaga environment)
   #:use-module (yaga primitives)
   #:use-module (yaga common)
   #:use-module (srfi srfi-1) ;; find
-  #:export (action-shader-program gather-program-vars))
+  #:export (action-shader-program gather-program-vars inlined-program))
 
 
 ;;
@@ -123,3 +124,57 @@
          [inspect
           (lambda (shader) (traverse (fetch 'body (cdr shader)) bindings '()))])
     (delete-duplicates (apply append (map inspect shaders)))))
+
+
+;; Reduce the program to types and function calls.
+(define (inlined-program program env)
+
+  (define (traverse expr bindings)
+    ;; If 'atom' is a binding, return its value or false.
+    (define (binding atom)
+      (define found (fetch atom bindings))
+      (if found (car found) #f))
+
+    ;; If 'expr' is a struct lookup, returns a type, recurses into
+    ;; a new scope, or returns false.
+    (define (inline-field expr)
+      (let* ([valid-length? (eq? (length expr) 2)]
+             [struct (if valid-length? (lookup-type (car expr) env) #f)]
+             [field-name (if valid-length? (cadr expr) #f)]
+             [found-code (if struct (struct-function-lookup struct field-name) #f)])
+        (and struct
+             (or (and found-code
+                      (traverse found-code (struct-all-bindings struct)))
+                 (struct-type-lookup struct field-name)))))
+
+    ;; If 'atom' is a binding, return the value, otherwise return the atom.
+    (define (process-atom atom)
+      (let ([bound (binding atom)])
+        (cond
+         [(and bound (pair? bound)) (process-pair bound)]
+         [else (or bound atom)])))
+
+    ;; Maps traverse to the elements in the expression, and then
+    ;; attempts to inline if the new expression is a field lookup,
+    ;; otherwise just return the new expression.
+    (define (process-pair expr)
+      (define (retraverse expr)
+        (traverse expr bindings))
+      (let ([new-expr (map retraverse expr)])
+        (or (inline-field new-expr) new-expr)))
+
+    ;; Fan out to process-atom or process-pair.
+    (cond
+     [(not (or (pair? expr) (null? expr))) (process-atom expr)]
+     [(pair? expr) (process-pair expr)]))
+
+  ;; Build the initial shader bindings, and then attempt to reduce it
+  ;; to just a list of types and method invocations for further analysis.
+  (let* ([shader-names (map cadr (car (fetch 'shaders program)))]
+         [shaders (map (lambda (name) (lookup-shader name env)) shader-names)]
+         [inputs (fetch 'inputs program)]
+         [transports (fetch 'transports program)]
+         [bindings (append inputs transports)]
+         [inline
+          (lambda (shader) (traverse (car (fetch 'body (cdr shader))) bindings ))])
+    (map inline shaders)))
