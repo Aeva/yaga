@@ -6,14 +6,14 @@
 
 
 (define-type <model>
-  (vertex-position #:float3 #:position-buffer)
+  (vertex-position #:float4 #:position-buffer)
   (vertex-normal #:float3 #:buffer)
   (vertex-uv #:float2 #:buffer)
   (world-matrix #:matrix4)
-  (world-position (* (world-matrix) (vertex-position)))
+  (world-position (* world-matrix vertex-position))
   ;; (screen-position
   ;;  (lambda (camera) 
-  ;;    (* (camera camera-matrix) (world-matrix) (vertex-position))))
+  ;;    (* (camera camera-matrix) world-matrix vertex-position)))
   (texture-map #:pixmap))
 
 

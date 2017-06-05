@@ -68,18 +68,18 @@
   (apply make-invocation (cons callback pipes)))
 
 
-(define perspective-matrix #:matrix4)
-(define view-matrix #:matrix4)
-(define world-matrix #:matrix4)
-(define vertex-position #:float4)
-(define fudge-factor #:float)
+;; (define perspective-matrix #:matrix4)
+;; (define view-matrix #:matrix4)
+;; (define world-matrix #:matrix4)
+;; (define vertex-position #:float4)
+;; (define fudge-factor #:float)
 
-(define arbitrary-example
-  `(* ,perspective-matrix
-      ,view-matrix
-      ,world-matrix
-      ,vertex-position
-      (radians ,fudge-factor)))
+;; (define arbitrary-example
+;;   `(* ,perspective-matrix
+;;       ,view-matrix
+;;       ,world-matrix
+;;       ,vertex-position
+;;       (radians ,fudge-factor)))
 
 ;; parse a source tree and built a constraint system for type solving
 (define (parse expr)
@@ -103,7 +103,7 @@
         
 
 ;; run the parser
-(define outflow (parse arbitrary-example))
+;; (define outflow (parse arbitrary-example))
 
 
 (define (check-graph)
@@ -115,4 +115,4 @@
       (display "Graph is solved!\n")
       (display "Graph is unsolved!\n")))
 
-(check-graph)
+;;(check-graph)
