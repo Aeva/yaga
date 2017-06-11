@@ -3,14 +3,30 @@
   #:use-module (srfi srfi-1)
   #:export (parse check-graph))
 
+;; The "all-drains" list catalogues all of the drains in the type
+;; inference graph, so that they can be inspected later to check to
+;; see if the graph is solved.
 (define all-drains '())
+
+;; "Register-drain!" prepends a drain on to the "all-drains" list.
 (define (register-drain! drain)
   (set! all-drains (cons drain all-drains))
   drain)
 
+;; The "solved?" predicate returns true if none of the drains in
+;; all-drains are null.
 (define (solved?)
   (every (lambda (drain) (not (null? (drain 'type)))) all-drains))
 
+;; The "drain" method creates a drain object, in the form of a
+;; dispatch method that provides access to enclosed values.
+;;
+;; Drains are used for propogating events between constraints, as well
+;; as for functioning as a "bucket" for containing the type of a given
+;; input or output of a function.
+;;
+;; A drain represent one value, but is the glue between one function's
+;; output and another function's input.
 (define (drain value)
   (define callbacks '())
   (define (connect! callback) (set! callbacks (cons callback callbacks)))
@@ -39,14 +55,28 @@
 
   (register-drain! dispatch))
 
-
+;; "Make-invocation" takes a callback (ostensibly for constraint
+;; solving) and some number of drains, and then returns the output
+;; drain.
 (define (make-invocation callback output . inputs)
   (map (lambda (pipe) ((pipe 'connect!) callback)) inputs)
   ((output 'connect!) callback)
   (callback)
   output)
 
-
+;; "Make-constraint" takes a symbol and some number of input drains,
+;; and returns an output drain.
+;;
+;; The symbol passed in should match one of the built-in symbols, so
+;; that the associated solver can be used as the constraint callback.
+;;
+;; This function essentially takes the type patter matching
+;; functionality described in patterns.scm, and wraps it as a
+;; constraint, resulting in a type inference solver.
+;;
+;; If the type inference system throws an error, this will also catch
+;; it and attempt to rewrite it with useful information to tie it back
+;; to the source that produced it.
 (define (make-constraint symbol . inputs)
   (define output (drain '()))
   (define pipes (cons output inputs))
@@ -68,21 +98,10 @@
      pipes old-types new-types))
   (apply make-invocation (cons callback pipes)))
 
-
-;; (define perspective-matrix #:matrix4)
-;; (define view-matrix #:matrix4)
-;; (define world-matrix #:matrix4)
-;; (define vertex-position #:float4)
-;; (define fudge-factor #:float)
-
-;; (define arbitrary-example
-;;   `(* ,perspective-matrix
-;;       ,view-matrix
-;;       ,world-matrix
-;;       ,vertex-position
-;;       (radians ,fudge-factor)))
-
-;; parse a source tree and built a constraint system for type solving
+;; The "parse" method takes a symbol tree describing a program, and
+;; builds a constraint tree from the function symbols and inputs.
+;; This will in turn populate the "all-drains" list for later
+;; validation.  It also might result in a type error being thrown.
 (define (parse expr)
   (define binary-ops '(* / + -))
 
@@ -101,12 +120,8 @@
         [(pair? expr) (method-handler (cdr expr))]
         [(or (number? expr) (keyword? expr)) (drain expr)]
         [else (error "parser error" expr)]))
-        
 
-;; run the parser
-;; (define outflow (parse arbitrary-example))
-
-
+;; Check to see if the graph is solved or if it is underspecified.
 (define (check-graph)
   (for-each
    (lambda (drain) (display " - ") (display (drain 'type)) (newline))
@@ -115,5 +130,3 @@
   (if (solved?)
       (display "Graph is solved!\n")
       (display "Graph is unsolved!\n")))
-
-;;(check-graph)

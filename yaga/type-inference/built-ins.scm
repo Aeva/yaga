@@ -3,10 +3,19 @@
   #:use-module (srfi srfi-1)
   #:export (built-in-solvers built-in-sizes))
 
+;; The "built-in-solvers" is an a-list where the keys are the symbols
+;; for all known built-in functions, and the associated values are
+;; the appropriate constraint solver function for that symbol.
 (define built-in-solvers '())
+
+;; The "built-in-sizes" list has a 1:1 relationship with
+;; "built-in-solvers" and represents the number of inputs each
+;; built-in function takes.
 (define built-in-sizes '())
 
-(define (register! name permutatrix )
+;; Register takes a name and a permutation matrix, generates a solver
+;; function, and then populates "built-in-solvers" and "built-in-sizes".
+(define (register! name permutatrix)
   (define arg-count (length (car permutatrix)))
   (define (solver . args)
     (if (not (eq? (length args) arg-count))
@@ -15,11 +24,19 @@
   (set! built-in-solvers (cons (cons name solver) built-in-solvers))
   (set! built-in-sizes (cons (cons name arg-count) built-in-sizes)))
 
+;; "Binary-operator" generates a permutation matrix appropriate for
+;; operators that can take any type so long as both operands are the
+;; same type.
 (define binary-operator
   (multi-permutate
    '((#:float #:float #:float)
      (#:vector #:vector #:vector)
      (#:matrix #:matrix #:matrix))))
+
+
+
+
+;; What follows are definitions for all builtin functions (so far):
 
 (register! '*
  (multi-permutate
