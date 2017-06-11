@@ -1,4 +1,6 @@
-(use-modules (srfi srfi-1))
+(define-module (yaga type-inference patterns)
+  #:use-module (srfi srfi-1)
+  #:export (solve permutate multi-permutate))
 
 
 (define (limit matcher list)

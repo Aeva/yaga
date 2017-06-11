@@ -1,5 +1,7 @@
-(use-modules (srfi srfi-1))
-(load "patterns.scm")
+(define-module (yaga type-inference built-ins)
+  #:use-module (yaga type-inference patterns)
+  #:use-module (srfi srfi-1)
+  #:export (built-in-solvers built-in-sizes))
 
 (define built-in-solvers '())
 (define built-in-sizes '())
@@ -37,6 +39,3 @@
 
 (register! 'radians (permutate '(#:vector #:vector)))
 (register! 'degrees (permutate '(#:vector #:vector)))
-
-
- 

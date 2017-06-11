@@ -3,8 +3,7 @@
 (use-modules (yaga environment))
 (use-modules (yaga shader-struct))
 (use-modules (yaga shader-program))
-
-(include "inference-experiment/drains.scm")
+(use-modules (yaga type-inference drains))
 
 (define test (inspect "shader.scm"))
 (newline)

@@ -1,6 +1,7 @@
-(use-modules (srfi srfi-1))
-(load "patterns.scm")
-(load "built-ins.scm")
+(define-module (yaga type-inference drains)
+  #:use-module (yaga type-inference built-ins)
+  #:use-module (srfi srfi-1)
+  #:export (parse check-graph))
 
 (define all-drains '())
 (define (register-drain! drain)
