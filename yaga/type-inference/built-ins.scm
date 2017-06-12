@@ -56,3 +56,8 @@
 
 (register! 'radians (permutate '(#:vector #:vector)))
 (register! 'degrees (permutate '(#:vector #:vector)))
+
+
+(register! 'sample '((#:float4 #:pixmap #:float2)
+                     (#:float4 #:cubemap #:float3)
+                     (#:float4 #:volume #:float3)))

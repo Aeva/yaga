@@ -14,11 +14,20 @@
 (display (gather-program-vars shader-program test))
 (newline)(newline)
 
-(define vertex-shader-inlined (car (inlined-program shader-program test)))
-(display vertex-shader-inlined)
-(newline)
+(define inlined-shader-pair (inlined-program shader-program test))
+(define vertex-shader-inlined (car inlined-shader-pair))
+(define fragment-shader-inlined (cadr inlined-shader-pair))
 
-(define vertex-shader-outflow (parse vertex-shader-inlined))
-(check-graph)
+(define (solve-and-print name inlined-program)
+  (display name)(display " shader inlined:")(newline)
+  (display "  ")
+  (display inlined-program)(newline)(newline)
+  (display name)(display " shader drains:")(newline)
+  (let ([drains (solve-simple-program inlined-program)])
+    (for-each
+     (lambda (drain) (display " - ") (display (drain 'type)) (newline))
+     drains))
+  (newline))
 
-(display "----\n")
+(solve-and-print "Vertex" vertex-shader-inlined)
+(solve-and-print "Fragment" fragment-shader-inlined)
