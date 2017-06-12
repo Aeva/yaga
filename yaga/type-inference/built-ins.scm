@@ -24,20 +24,32 @@
   (set! built-in-solvers (cons (cons name solver) built-in-solvers))
   (set! built-in-sizes (cons (cons name arg-count) built-in-sizes)))
 
-;; "Binary-operator" generates a permutation matrix appropriate for
-;; operators that can take any type so long as both operands are the
-;; same type.
+;; "Binary-operator" is a permutation matrix appropriate for operators
+;; that can take any type so long as both operands are the same type.
 (define binary-operator
   (multi-permutate
    '((#:float #:float #:float)
      (#:vector #:vector #:vector)
      (#:matrix #:matrix #:matrix))))
 
+;; "Vector-operator" is a permutation matrix for operators that only
+;; take vector operands of the same type.
+(define vector-operator (permutate '(#:vector #:vector #:vector)))
+
+;; "Matrix-operator" is a permutation matrix for operators that only
+;; take matrix operands of the same type.
+(define matrix-operator (permutate '(#:matrix #:matrix #:matrix)))
+
+;; "Vector-function" is a permutation matrix for functions that both
+;; take and return a vector type.
+(define vector-function (permutate '(#:vector #:vector)))
 
 
+;; -------------------------------------------------------
+;; What follows are definitions for all builtin functions:
+;; -------------------------------------------------------
 
-;; What follows are definitions for all builtin functions (so far):
-
+;; Misc Operators
 (register! '*
  (multi-permutate
   '((#:float #:float #:float)       ; all binary operators
@@ -54,10 +66,98 @@
 (register! '+ binary-operator)
 (register! '- binary-operator)
 
-(register! 'radians (permutate '(#:vector #:vector)))
-(register! 'degrees (permutate '(#:vector #:vector)))
+(register! 'component-wise-multiply '((#:matrix2 #:matrix2 #:matrix2)
+                                      (#:matrix3 #:matrix3 #:matrix3)
+                                      (#:matrix4 #:matrix4 #:matrix4)))
 
+;; Comparison Functions
+(register! '< (multi-permutate '((#:bool #:vector #:vector)
+                                 (#:bool #:int-vector #:int-vector))))
+(register! '<= (multi-permutate '((#:bool #:vector #:vector)
+                                  (#:bool #:int-vector #:int-vector))))
+(register! '> (multi-permutate '((#:bool #:vector #:vector)
+                                 (#:bool #:int-vector #:int-vector))))
+(register! '>= (multi-permutate '((#:bool #:vector #:vector)
+                                  (#:bool #:int-vector #:int-vector))))
+(register! '= (multi-permutate '((#:bool #:vector #:vector)
+                                 (#:bool #:int-vector #:int-vector))))
+(register! '!= (multi-permutate '((#:bool #:vector #:vector)
+                                  (#:bool #:int-vector #:int-vector))))
+(register! 'any '((#:bool #:bool2)
+                  (#:bool #:bool3)
+                  (#:bool #:bool4)))
+(register! 'every '((#:bool #:bool2)
+                    (#:bool #:bool3)
+                    (#:bool #:bool4)))
+;(register! 'not (permutate '(#:bool #:bool-vector))) ;; this will throw an error?
 
+;; Trig Functions
+(register! 'radians vector-function)
+(register! 'degrees vector-function)
+(register! 'sin vector-function)
+(register! 'cos vector-function)
+(register! 'tan vector-function)
+(register! 'asin vector-function)
+(register! 'acos vector-function)
+(register! 'atan vector-function) ;; note, "atan" should also support
+                                  ;; (vec vec vec), but disjoint
+                                  ;; argument lengths are not yet
+                                  ;; supported.
+
+;; Exponent Functions
+(register! 'pow vector-operator) ;; op
+(register! 'exp vector-function)
+(register! 'log vector-function)
+(register! 'exp-2 vector-function)
+(register! 'log-2 vector-function)
+(register! 'square-root vector-function)
+(register! 'inverse-square-root vector-function)
+
+;; Common Math Functions
+(register! 'abs vector-function)
+(register! 'sign vector-function)
+(register! 'floor vector-function)
+(register! 'ceiling vector-function)
+(register! 'fraction vector-function)
+(register! 'modulus (multi-permutate '((#:vector #:vector)
+                                       (#:vector #:float))))
+(register! 'min (multi-permutate '((#:vector #:vector)
+                                   (#:vector #:float))))
+(register! 'max (multi-permutate '((#:vector #:vector)
+                                   (#:vector #:float))))
+(register! 'clamp (multi-permutate '((#:vector #:vector)
+                                     (#:vector #:float))))
+(register! 'lerp (multi-permutate '((#:vector #:vector #:vector)
+                                    (#:vector #:vector #:float))))
+(register! 'step (multi-permutate '((#:vector #:vector)
+                                    (#:float #:vector))))
+(register! 'smooth-step (multi-permutate '((#:vector #:vector #:vector)
+                                           (#:float #:float #:vector))))
+
+;; Geometry Functions
+(register! 'length (permutate '(#:float #:vector)))
+(register! 'distance (permutate '(#:float #:vector #:vector)))
+(register! 'dot-product (permutate '(#:float #:vector #:vector)))
+(register! 'cross-product '((#:float3 #:float3 #:float3)))
+(register! 'normalize vector-function)
+(register! 'face-forward (permutate '(#:vector #:vector #:vector #:vector)))
+(register! 'reflect vector-operator) ;; op
+(register! 'refract (permutate '(#:vector #:vector #:vector #:float)))
+
+;; Texture Lookup Functions
 (register! 'sample '((#:float4 #:pixmap #:float2)
                      (#:float4 #:cubemap #:float3)
                      (#:float4 #:volume #:float3)))
+(register! 'sample-lod '((#:float4 #:pixmap #:float2 #:float)
+                         (#:float4 #:cubemap #:float3 #:float)
+                         (#:float4 #:volume #:float3 #:float)))
+(register! 'projective-sample '((#:float4 #:pixmap #:float3)
+                                (#:float4 #:volume #:float4)))
+(register! 'projective-sample-lod '((#:float4 #:pixmap #:float3 #:float)
+                                    (#:float4 #:volume #:float4 #:float)))
+
+;; Derivative Functions
+(register! 'dFdx vector-function)
+(register! 'dFdy vector-function)
+(register! 'f-width vector-function)
+

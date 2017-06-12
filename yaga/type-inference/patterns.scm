@@ -93,11 +93,15 @@
      4
      0))
   (define vectors '(#:float #:float2 #:float3 #:float4))
+  (define int-vectors '(#:int #:int2 #:int3 #:int4))
+  (define bool-vectors '(#:bool #:bool2 #:bool3 #:bool4))
   (define matrices '(#:float #:matrix2 #:matrix3 #:matrix4))
   (define (permute size)
     (define (subst input)
       (cond [(eq? input #:vector) (list-ref vectors size)]
             [(eq? input #:matrix) (list-ref matrices size)]
+            [(eq? input #:int-vector) (list-ref int-vectors size)]
+            [(eq? input #:bool-vector) (list-ref bool-vectors size)]
             [else input]))
     (map subst pattern))
   (map permute (range sizes)))
